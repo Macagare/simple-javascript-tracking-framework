@@ -1,13 +1,16 @@
 (function($, win, doc, undefined) {
-	var codeName  = "st_tracking_code";
-	var stored    = false;
+	var codeName = "st_tracking_code";
+	var stored = false;
 	var isLoading = false;
-	var initTime  = new Date().getTime();
+	var initTime = new Date().getTime();
 	var readyTime = initTime;
 
 	$(doc).ready(function(){
 		readyTime = new Date().getTime();
-		trackView();
+		if ( stored ) {
+			trackLocation();
+			trackView("enter");
+		}
 	});
 
 	function init() {
@@ -17,7 +20,6 @@
 		} else {
 			stored = true;
 		}
-		trackLocation();
 	}
 
 	function hasTrackCode() {
@@ -60,7 +62,7 @@
 		    beforeSend: function() { isLoading = true; },
 		    success: function(data) {
 		    	isLoading = false;
-		    	storeCode(data);
+		    	storeCode(data, true);
 		    },
 		    error : function() { isLoading = false; }
 		});
@@ -72,6 +74,7 @@
 		    url: 'http://localhost:8888/tracking/tracking.php',
 		    data: {
 				method: "setgeo",
+				code: readCode(),
 				data: getGeoIpData()
 			},
 		    dataType: 'json',
@@ -80,14 +83,19 @@
 		});	
 	}
 
-	function storeCode(code) {
+	function storeCode(code, doEnter) {
 		$.cookie(codeName, code);
 		stored = true;
+
+		if ( doEnter ) {
+			trackLocation();
+			trackView("enter");
+		}
 	}
 
-	function trackView() {
+	function trackView(event) {
 		if ( stored ) {
-			var obj = trackData();
+			var obj = trackData(event);
 			console.log( obj );
 		}
 	}
@@ -100,7 +108,21 @@
 			code: readCodeSecure(),
 			ts: new Date().getTime(),
 			sinceReady: new Date().getTime() - readyTime,
-			sinceInit: new Date().getTime() - initTime
+			sinceInit: new Date().getTime() - initTime,
+			windowHeight: $(window).height(),
+			documentHeight: $(document).height(),
+			windowWidth: $(window).width(),
+			documentWidth: $(document).width(),
+			screenHeight: win.screen.availHeight,
+			screenWidth: win.screen.availWidth,
+			referrer: doc.referrer,
+			appCode: navigator.appCodeName,
+			appName: navigator.appName,
+			appVersion: navigator.appVersion,
+			cookies: navigator.cookieEnabled,
+			lang: navigator.language,
+			platform: navigator.platform,
+			agent: navigator.userAgent
 		};
 	}
 
